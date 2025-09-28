@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+RUNTIME_DIR=/opt/jungi
+PACKAGES_DIR=$RUNTIME_DIR/packages
+
+if [ ! -d $RUNTIME_DIR ]; then
+  echo "runtime is not installed"
+  exit 1
+fi
+
+if find $PACKAGES_DIR -mindepth 1 -maxdepth 1 -type d | read; then
+    echo "There are still installed packages, remove them first to remove the runtime"
+    exit 1
+fi
