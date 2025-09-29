@@ -1,6 +1,6 @@
 # ⚡ Runtime for Mobilus Cosmo GTW
 
-A newer runtime target for **Mobilus Cosmo GTW** that runs on the old **OpenWRT 15.05.1**. This runtime uses dynamic linker and libraries from **OpenWRT 23.05.5**. It enables to run modern apps compiled against GCC 12+. Thanks to it you can run on **Cosmo GTW** such apps like **mobmatter** and **moblink**.
+A modern OpenWRT runtime for **Mobilus Cosmo GTW** that runs on the legacy **OpenWRT 15.05.1**. This runtime leverages the dynamic linker and libraries from **OpenWRT 24**, enabling modern applications to run without upgrading the system. With it, you can run apps like [**mobmatter**](https://github.com/piku235/mobmatter) and [**moblink**](https://github.com/piku235/moblink) directly on **Cosmo GTW**.
 
 ## Overview
 
