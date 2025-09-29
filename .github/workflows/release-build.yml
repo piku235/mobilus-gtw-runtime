@@ -74,7 +74,7 @@ jobs:
         cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libstdc++.so* runtime/opt/jungi/lib
 
     - name: Strip compiled libraries
-      run: find runtime/opt/jungi/lib -maxdepth 1 -type f -name 'lib*.so*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {} +
+      run: find runtime/opt/jungi/lib -maxdepth 1 -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {} +
 
     - name: Build package
       run: |
