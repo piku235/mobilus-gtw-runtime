@@ -59,7 +59,7 @@ install() {
     fi
 
     [ -x "$tempdir/prerm" ] && cp -a "$tempdir/prerm" "$PACKAGES_DIR/$package_name"
-    [ -x "$tempdir/postinst" ] && "$tempdir/postinst"
+    [ -x "$tempdir/postinst" ] && RUNTIME_DIR="$RUNTIME_DIR" "$tempdir/postinst"
 }
 
 update() {
@@ -111,7 +111,7 @@ update() {
 
     echo "Updating to version $package_version"
 
-    [ -x "$PACKAGES_DIR/$package_name/prerm" ] && "$PACKAGES_DIR/$package_name/prerm"
+    [ -x "$PACKAGES_DIR/$package_name/prerm" ] && RUNTIME_DIR="$RUNTIME_DIR" "$PACKAGES_DIR/$package_name/prerm"
 
     echo "Removing obsolete files"
     [ -f "$PACKAGES_DIR/$package_name/files" ] && while read f; do
@@ -137,7 +137,7 @@ update() {
     fi
 
     [ -x "$tempdir/prerm" ] && cp -a "$tempdir/prerm" "$PACKAGES_DIR/$package_name"
-    [ -x "$tempdir/postinst" ] && "$tempdir/postinst"
+    [ -x "$tempdir/postinst" ] && RUNTIME_DIR="$RUNTIME_DIR" "$tempdir/postinst"
 }
 
 remove() {
@@ -155,7 +155,7 @@ remove() {
 
     echo "Removing package"
 
-    [ -x "$PACKAGES_DIR/$package_name/prerm" ] && "$PACKAGES_DIR/$package_name/prerm"
+    [ -x "$PACKAGES_DIR/$package_name/prerm" ] && RUNTIME_DIR="$RUNTIME_DIR" "$PACKAGES_DIR/$package_name/prerm"
 
     if [ -f "$PACKAGES_DIR/$package_name/files" ]; then
         while read f; do rm -f "$f"
