@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 
 REPO=piku235/mobilus-gtw-runtime
 PACKAGE_NAME="runtime.tar.gz"
@@ -12,22 +11,34 @@ if [ -d $RUNTIME_DIR ]; then
 fi
 
 cd /tmp
+
+echo "Downloading the runtime"
 wget -qO "$PACKAGE_NAME" --no-check-certificate "$PACKAGE_URL"
 
-if [ $? -eq 0 ]; then
-    echo "Downloading the runtime"
-else
+if [ $? -ne 0 ]; then
     echo "Failed to download the runtime"
     exit 1
 fi
 
+tempdir=$(mktemp -d)
+
+cleanup() {
+    [ -n "$tempdir" ] && rm -rf "$tempdir" || true
+}
+
+trap cleanup EXIT
+
 echo "Extracting the runtime"
-gzip -dc "$package_file" | tar -xf - -C / .
+gzip -dc "$PACKAGE_NAME" | tar -xf - -C $tempdir .
 
 if [ $? -ne 0 ]; then
     echo "Failed to extract the runtime"
     exit 1
 fi
+
+mkdir -p "$tempdir/files/$RUNTIME_DIR/.runtime"
+cp "$tempdir/version" "$tempdir/files/$RUNTIME_DIR/.runtime"
+(cd "$tempdir/files" && find . \( -type f -o -type l \)) | sed 's|^\./||' > "$tempdir/files/$RUNTIME_DIR/.runtime/files"
 
 echo "Done!"
 echo "Now you can type: $RUNTIME_DIR/scripts/pkg to install a desired package on Cosmo GTW"

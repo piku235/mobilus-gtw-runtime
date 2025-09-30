@@ -55,7 +55,7 @@ install() {
 
     if [ -d "$tempdir/files" ]; then
         cp -ar "$tempdir/files/." /
-        (cd "$tempdir/files" && find . \( -type f -o -type l \)) | sed 's|^\./|/|' > "$PACKAGES_DIR/$package_name/files"
+        (cd "$tempdir/files" && find . \( -type f -o -type l \)) | sed 's|^\./||' > "$PACKAGES_DIR/$package_name/files"
     fi
 
     [ -x "$tempdir/prerm" ] && cp -a "$tempdir/prerm" "$PACKAGES_DIR/$package_name"
@@ -115,9 +115,9 @@ update() {
 
     echo "Removing obsolete files"
     [ -f "$PACKAGES_DIR/$package_name/files" ] && while read f; do
-        if [ ! -e "$tempdir/files$f" ]; then
-            rm -rf "$f"
-            echo "$f"
+        if [ ! -e "$tempdir/files/$f" ]; then
+            rm -rf "/$f"
+            echo "/$f"
         fi
     done < "$PACKAGES_DIR/$package_name/files"
     rm -f "$PACKAGES_DIR/$package_name/files"
@@ -125,13 +125,14 @@ update() {
     echo "Updating files"
     if [ -d "$tempdir/files" ]; then
         find "$tempdir/files" \( -type f -o -type l \) | while read f; do
-            dest="/${f#$tempdir/files/}"
+            relative="${f#$tempdir/files/}"
+            dest="/$relative"
             mkdir -p "$(dirname "$dest")"
             if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
                 cp -a "$f" "$dest"
                 echo "$dest"
             fi
-            echo "$dest" >> "$PACKAGES_DIR/$package_name/files"
+            echo "$relative" >> "$PACKAGES_DIR/$package_name/files"
         done
     fi
 

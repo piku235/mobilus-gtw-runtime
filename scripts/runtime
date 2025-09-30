@@ -1,0 +1,110 @@
+#!/bin/sh
+
+REPO=piku235/mobilus-gtw-runtime
+PACKAGE_NAME="runtime.tar.gz"
+PACKAGE_URL="https://github.com/$REPO/releases/latest/download/$PACKAGE_NAME"
+RUNTIME_DIR=/opt/jungi
+PACKAGES_DIR=$RUNTIME_DIR/packages
+
+update() {
+    if [ ! -d $RUNTIME_DIR ]; then
+        echo "runtime is not installed"
+        exit 1
+    fi
+
+    tempdir=$(mktemp -d)
+
+    cleanup() {
+        [ -n "$tempdir" ] && rm -rf "$tempdir" || true
+    }
+
+    trap cleanup EXIT
+
+    wget -qO "$tempdir/$PACKAGE_NAME" --no-check-certificate "$PACKAGE_URL"
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to download the runtime"
+        exit 1
+    fi
+
+    echo "Extracting the runtime"
+    gzip -dc "$tempdir/$PACKAGE_NAME" | tar -xf - -C $tempdir .
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to extract the runtime"
+        exit 1
+    fi
+
+    current_version=$(cat $RUNTIME_DIR/.runtime/version)
+    package_version=$(cat $tempdir/version)
+
+    if [ $current_version = $package_version ]; then
+        echo "Already at the lastest v$current_version"
+        exit 1
+    fi
+
+    echo "Updating to version $package_version"
+
+    echo "Removing obsolete files"
+    [ -f "$RUNTIME_DIR/.runtime/files" ] && while read f; do
+        if [ ! -e "$tempdir/files/$f" ]; then
+            rm -rf "$f"
+            echo "$f"
+        fi
+    done < "$RUNTIME_DIR/.runtime/files"
+    rm -f "$RUNTIME_DIR/.runtime/files"
+
+    echo "Updating files"
+    if [ -d "$tempdir/files" ]; then
+        find "$tempdir/files" \( -type f -o -type l \) | while read f; do
+            relative="${f#$tempdir/files/}"
+            dest="$RUNTIME_DIR/$relative"
+
+            mkdir -p "$(dirname "$dest")"
+            if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
+                cp -a "$f" "$dest"
+                echo "$dest"
+            fi
+
+            echo "$relative" >> "$RUNTIME_DIR/.runtime/files"
+        done
+    fi
+
+    [ -x "$tempdir/postinst" ] && "$tempdir/postinst"
+
+    echo "Update completed"
+}
+
+remove() {
+    if [ ! -d $RUNTIME_DIR ]; then
+        echo "runtime is not installed"
+        exit 1
+    fi
+
+    if find $PACKAGES_DIR -mindepth 1 -maxdepth 1 -type d | read; then
+        echo "There are still installed packages, remove them first to remove the runtime"
+        exit 1
+    fi
+
+    read -p "Are you sure you want to continue? (y/n) " answer
+    if [ "$answer" != "y" && "$answer" != "Y" ]; then
+        echo "Aborted"
+        exit 1
+    fi
+
+    rm -rf "$RUNTIME_DIR"
+}
+
+show_usage() {
+    cat <<'EOF'
+Usage:
+    runtime update  # updates the runtime
+    runtime remove  # removes the runtime
+EOF
+}
+
+case "$1" in
+    update) shift; update;;
+    remove) shift; remove;;
+    *) show_usage;;
+esac
