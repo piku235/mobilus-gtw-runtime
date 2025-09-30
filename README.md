@@ -11,19 +11,19 @@ Currently, the package manager supports two packages: `mobmatter` and `moblink`.
 To install a package:
 
 ```bash
-scripts/pkg install mobmatter
+/opt/jungi/scripts/pkg install <package_name>
 ```
 
 To update the package:
 
 ```bash
-scripts/pkg update mobmatter
+/opt/jungi/scripts/pkg update <package_name>
 ```
 
 And to remove the package
 
 ```bash
-scripts/pkg remove mobmatter
+/opt/jungi/scripts/pkg remove <package_name>
 ```
 
 ## Installation
