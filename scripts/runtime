@@ -45,6 +45,8 @@ update() {
 
     echo "Updating to version $package_version"
 
+    [ -x "$tempdir/preinst" ] && "$tempdir/preinst"
+
     echo "Removing obsolete files"
     [ -f "$RUNTIME_DIR/.runtime/files" ] && while read f; do
         if [ ! -e "$tempdir/files/$f" ]; then
@@ -71,8 +73,6 @@ update() {
     fi
 
     [ -x "$tempdir/postinst" ] && "$tempdir/postinst"
-
-    echo "Update completed"
 }
 
 remove() {
