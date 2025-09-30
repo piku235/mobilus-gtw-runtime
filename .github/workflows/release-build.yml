@@ -25,6 +25,7 @@ jobs:
       shell: bash
       run: |
         echo "build-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        echo "runtime-dir=runtime/opt/jungi" >> "$GITHUB_OUTPUT"
         echo "openwrt-target-dir=openwrt-sdk/staging_dir/target-${ARCH}_musl" >> "$GITHUB_OUTPUT"
         echo "openwrt-toolchain-dir=openwrt-sdk/staging_dir/toolchain-${ARCH}_gcc-${GCC_VERSION}_musl" >> "$GITHUB_OUTPUT"
 
@@ -59,27 +60,27 @@ jobs:
 
     - name: Copy compiled libraries
       run: |
-        mkdir -p runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcares.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcjson.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcrypto.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libssl.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquitto.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquittopp.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libsqlite3.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libz.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/ld-musl-mipsel-sf.so.1 runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libatomic.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libc.so runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libgcc_s.so* runtime/opt/jungi/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libstdc++.so* runtime/opt/jungi/lib
+        mkdir -p ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcares.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcjson.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcrypto.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libssl.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquitto.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquittopp.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libsqlite3.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libz.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/ld-musl-mipsel-sf.so.1 ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libatomic.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libc.so ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libgcc_s.so* ${{ steps.strings.outputs.runtime-dir }}/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libstdc++.so* ${{ steps.strings.outputs.runtime-dir }}/lib
 
     - name: Strip compiled libraries
-      run: find runtime/opt/jungi/lib -maxdepth 1 -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {} +
+      run: find ${{ steps.strings.outputs.runtime-dir }}/lib -maxdepth 1 -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {} +
 
     - name: Build package
       run: |
-        cp -ar scripts runtime/opt/jungi/
+        cp -ar scripts ${{ steps.strings.outputs.runtime-dir }}
         tar -czf runtime.tar.gz -C runtime .
 
     - name: Upload
