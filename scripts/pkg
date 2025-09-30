@@ -1,42 +1,46 @@
 #!/bin/sh
-set -e
 
 RUNTIME_DIR=/opt/jungi
 PACKAGES_DIR=$RUNTIME_DIR/packages
 
 package_url() {
-    local package_name="$1"
+    package_name="$1"
     echo "https://github.com/piku235/$package_name/releases/latest/download/$package_name.jpk"
 }
 
 install() {
-    local package_name="$1"
-    local package_file="$package_name.jpk"
-    local package_url=$(package_url $package_name)
-    local tempdir=$(mktemp -d)
+    package_name="$1"
+    package_file="$package_name.jpk"
+    package_url=$(package_url $package_name)
+
+    if [ -z "$package_name" ]; then
+        echo "Missing package name"
+        exit 1
+    fi
 
     if [ -d "$PACKAGES_DIR/$package_name" ]; then
         echo "Package: $package_name is already installed"
         exit 1
     fi
 
+    tempdir=$(mktemp -d)
+
     cleanup() {
-        rm -rf "$tempdir"
+        [ -n "$tempdir" ] && rm -rf "$tempdir" || true
     }
 
-    trap cleanup EXIT INT TERM
+    trap cleanup EXIT
 
+    echo "Downloading the package"
     wget -qO "$tempdir/$package_file" --no-check-certificate "$package_url"
 
-    if [ $? -eq 0 ]; then
-        echo "Downloading the package: $package_name"
-    else
-        echo "Failed to download the package: $package_name. Are you sure it exists?"
+    if [ $? -ne 0 ]; then
+        echo "Failed to download the package, are you sure it exists?"
         exit 1
     fi
 
     echo "Extracting the package"
-    gzip -dc "$package_file" | tar -xf - -C $tempdir .
+    gzip -dc "$tempdir/$package_file" | tar -xf - -C $tempdir .
 
     if [ $? -ne 0 ]; then
         echo "Failed to extract the package"
@@ -47,55 +51,50 @@ install() {
     cp "$tempdir/version" "$PACKAGES_DIR/$package_name"
     package_version=$(cat "$PACKAGES_DIR/$package_name/version")
 
-    echo "Copying files ..."
+    echo "Installing version $package_version"
 
     if [ -d "$tempdir/files" ]; then
-        cd "$tmpdir/files"
-        find . -type f -o -type l | while read f; do
-            relative="${f#$tmpdir/files/}"
-            dest="$RUNTIME_DIR/$relative"
-            mkdir -p "$(dirname "$dest")"
-            cp -a "$f" "$dest"
-            echo "$dest" >> "$PACKAGES_DIR/$package_name/files"
-        done
+        cp -ar "$tempdir/files/." /
+        (cd "$tempdir/files" && find . \( -type f -o -type l \)) | sed 's|^\./|/|' > "$PACKAGES_DIR/$package_name/files"
     fi
 
-    [ -x "$tmpdir/prerm" ] && cp -a "$tmpdir/prerm" "$PACKAGES_DIR/$package_name"
-
-    echo "Post scripts ..."
-    [ -x "$tmpdir/postinst" ] && "$tmpdir/postinst"
-
-    echo "Installed $package_name v$package_version"
+    [ -x "$tempdir/prerm" ] && cp -a "$tempdir/prerm" "$PACKAGES_DIR/$package_name"
+    [ -x "$tempdir/postinst" ] && "$tempdir/postinst"
 }
 
 update() {
-    local package_name="$1"
-    local package_file="$package_name.jpk"
-    local package_url=$(package_url $package_name)
-    local tempdir=$(mktemp -d)
+    package_name="$1"
+    package_file="$package_name.jpk"
+    package_url=$(package_url $package_name)
+
+    if [ -z "$package_name" ]; then
+        echo "Missing package name"
+        exit 1
+    fi
 
     if [ ! -d "$PACKAGES_DIR/$package_name" ]; then
         echo "Package: $package_name is not installed"
         exit 1
     fi
 
+    tempdir=$(mktemp -d)
+
     cleanup() {
-        rm -rf "$tempdir"
+        [ -n "$tempdir" ] && rm -rf "$tempdir" || true
     }
 
-    trap cleanup EXIT INT TERM
+    trap cleanup EXIT
 
+    echo "Downloading the package"
     wget -qO "$tempdir/$package_file" --no-check-certificate "$package_url"
 
-    if [ $? -eq 0 ]; then
-        echo "Downloading the package: $package_name"
-    else
-        echo "Failed to download the package: $package_name"
+    if [ $? -ne 0 ]; then
+        echo "Failed to download the package"
         exit 1
     fi
 
     echo "Extracting the package"
-    gzip -dc "$package_file" | tar -xf - -C $tempdir .
+    gzip -dc "$tempdir/$package_file" | tar -xf - -C $tempdir .
 
     if [ $? -ne 0 ]; then
         echo "Failed to extract the package"
@@ -106,63 +105,63 @@ update() {
     package_version=$(cat "$PACKAGES_DIR/$package_name/version")
 
     if [ $downloaded_package_version = $package_version ]; then
-        echo "Package: $package_name is already at the lastest v$package_version"
+        echo "Package is already at the lastest v$package_version"
         exit 1
     fi;
 
-    echo "Pre scripts ..."
+    echo "Updating to version $package_version"
+
     [ -x "$PACKAGES_DIR/$package_name/prerm" ] && "$PACKAGES_DIR/$package_name/prerm"
 
     echo "Removing obsolete files"
     [ -f "$PACKAGES_DIR/$package_name/files" ] && while read f; do
-        if ! grep -qxF "$f" "$tempdir/files"; then
+        if [ ! -e "$tempdir/files$f" ]; then
             rm -rf "$f"
+            echo "$f"
         fi
     done < "$PACKAGES_DIR/$package_name/files"
     rm -f "$PACKAGES_DIR/$package_name/files"
 
-    echo "Copying files ..."
+    echo "Updating files"
     if [ -d "$tempdir/files" ]; then
-        cd "$tmpdir/files"
-        find . -type f -o -type l | while read f; do
-            relative="${f#$tmpdir/files/}"
-            dest="$RUNTIME_DIR/$relative"
+        find "$tempdir/files" \( -type f -o -type l \) | while read f; do
+            dest="/${f#$tempdir/files/}"
             mkdir -p "$(dirname "$dest")"
-
             if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
-                mkdir -p "$(dirname "$dest")"
                 cp -a "$f" "$dest"
+                echo "$dest"
             fi
-
             echo "$dest" >> "$PACKAGES_DIR/$package_name/files"
         done
     fi
 
-    [ -x "$tmpdir/prerm" ] && cp -a "$tmpdir/prerm" "$PACKAGES_DIR/$package_name"
-    [ -x "$tmpdir/postinst" ] && "$tmpdir/postinst"
-
-    echo "Installed $package_name v$package_version"
+    [ -x "$tempdir/prerm" ] && cp -a "$tempdir/prerm" "$PACKAGES_DIR/$package_name"
+    [ -x "$tempdir/postinst" ] && "$tempdir/postinst"
 }
 
 remove() {
-    local package_name="$1"
+    package_name="$1"
 
-    if [ ! -d "$PACKAGES_DIR/$package_name" ]; then
-        echo "Package: $package_name is not installed."
+    if [ -z "$package_name" ]; then
+        echo "Missing package name"
         exit 1
     fi
 
-    echo "Pre scripts ..."
+    if [ ! -d "$PACKAGES_DIR/$package_name" ]; then
+        echo "Package is not installed."
+        exit 1
+    fi
+
+    echo "Removing package"
+
     [ -x "$PACKAGES_DIR/$package_name/prerm" ] && "$PACKAGES_DIR/$package_name/prerm"
 
-    echo "Removing files"
     if [ -f "$PACKAGES_DIR/$package_name/files" ]; then
         while read f; do rm -f "$f"
         done < "$PACKAGES_DIR/$package_name/files"
     fi
 
     rm -rf "$PACKAGES_DIR/$package_name"
-    echo "Package: $package_name has been removed"
 }
 
 show_usage() {
