@@ -8,6 +8,19 @@ package_url() {
     echo "https://github.com/piku235/$package_name/releases/latest/download/$package_name.jpk"
 }
 
+run_script() {
+    script=$1
+
+    if [ -x "$script" ]; then
+        RUNTIME_DIR="$RUNTIME_DIR" "$script"
+        rc=$?
+
+        if [ $rc -ne 0 ]; then
+            exit $rc
+        fi
+    fi
+}
+
 install() {
     package_name="$1"
     package_file="$package_name.jpk"
@@ -47,11 +60,12 @@ install() {
         exit 1
     fi
 
+    echo "Installing version $package_version"
+    run_script "$tempdir/preinst"
+
     mkdir -p "$PACKAGES_DIR/$package_name"
     cp "$tempdir/version" "$PACKAGES_DIR/$package_name"
     package_version=$(cat "$PACKAGES_DIR/$package_name/version")
-
-    echo "Installing version $package_version"
 
     if [ -d "$tempdir/files" ]; then
         cp -ar "$tempdir/files/." /
@@ -59,7 +73,9 @@ install() {
     fi
 
     [ -x "$tempdir/prerm" ] && cp -a "$tempdir/prerm" "$PACKAGES_DIR/$package_name"
-    [ -x "$tempdir/postinst" ] && RUNTIME_DIR="$RUNTIME_DIR" "$tempdir/postinst"
+    [ -x "$tempdir/postrm" ] && cp -a "$tempdir/postrm" "$PACKAGES_DIR/$package_name"
+
+    run_script "$tempdir/postinst"
 }
 
 update() {
@@ -110,8 +126,8 @@ update() {
     fi;
 
     echo "Updating to version $package_version"
-
-    [ -x "$PACKAGES_DIR/$package_name/prerm" ] && RUNTIME_DIR="$RUNTIME_DIR" "$PACKAGES_DIR/$package_name/prerm"
+    run_script "$tempdir/preinst"
+    run_script "$PACKAGES_DIR/$package_name/prerm"
 
     echo "Removing obsolete files"
     [ -f "$PACKAGES_DIR/$package_name/files" ] && while read f; do
@@ -137,7 +153,9 @@ update() {
     fi
 
     [ -x "$tempdir/prerm" ] && cp -a "$tempdir/prerm" "$PACKAGES_DIR/$package_name"
-    [ -x "$tempdir/postinst" ] && RUNTIME_DIR="$RUNTIME_DIR" "$tempdir/postinst"
+    [ -x "$tempdir/postrm" ] && cp -a "$tempdir/postrm" "$PACKAGES_DIR/$package_name"
+    
+    run_script "$tempdir/postinst"
 }
 
 remove() {
@@ -154,8 +172,7 @@ remove() {
     fi
 
     echo "Removing package"
-
-    [ -x "$PACKAGES_DIR/$package_name/prerm" ] && RUNTIME_DIR="$RUNTIME_DIR" "$PACKAGES_DIR/$package_name/prerm"
+    run_script "$PACKAGES_DIR/$package_name/prerm"
 
     if [ -f "$PACKAGES_DIR/$package_name/files" ]; then
         while read f; do rm -f "$f"
@@ -163,6 +180,7 @@ remove() {
     fi
 
     rm -rf "$PACKAGES_DIR/$package_name"
+    run_script "$PACKAGES_DIR/$package_name/postrm"
 }
 
 show_usage() {

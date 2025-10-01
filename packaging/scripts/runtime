@@ -6,6 +6,29 @@ PACKAGE_URL="https://github.com/$REPO/releases/latest/download/$PACKAGE_NAME"
 RUNTIME_DIR=/opt/jungi
 PACKAGES_DIR=$RUNTIME_DIR/packages
 
+run_script() {
+    script=$1
+
+    if [ -x "$script" ]; then
+        "$script"
+        rc=$?
+
+        if [ $rc -ne 0 ]; then
+            exit $rc
+        fi
+    fi
+}
+
+rollback_mobilus() {
+    echo "Rolling back mobilus"
+    /etc/init.d/mobilus disable
+    /etc/init.d/mobilus stop
+    
+    rm -f /etc/init.d/mobilus
+    [ -f /etc/rc.local.old ] && mv /etc/rc.local.old /etc/rc.local
+    /mobilus/mobilus &
+}
+
 update() {
     if [ ! -d $RUNTIME_DIR ]; then
         echo "runtime is not installed"
@@ -44,14 +67,15 @@ update() {
     fi
 
     echo "Updating to version $package_version"
-
-    [ -x "$tempdir/preinst" ] && "$tempdir/preinst"
+    run_script "$tempdir/preinst"
+    run_script "$tempdir/prerm"
 
     echo "Removing obsolete files"
     [ -f "$RUNTIME_DIR/.runtime/files" ] && while read f; do
+        source="$RUNTIME_DIR/$f"
         if [ ! -e "$tempdir/files/$f" ]; then
-            rm -rf "$f"
-            echo "$f"
+            rm -f "$source"
+            echo "$source"
         fi
     done < "$RUNTIME_DIR/.runtime/files"
     rm -f "$RUNTIME_DIR/.runtime/files"
@@ -72,7 +96,7 @@ update() {
         done
     fi
 
-    [ -x "$tempdir/postinst" ] && "$tempdir/postinst"
+    run_script "$tempdir/postinst"
 }
 
 remove() {
@@ -92,7 +116,13 @@ remove() {
         exit 1
     fi
 
+    run_script "$tempdir/prerm"
+    rollback_mobilus
+
+    echo "Removing runtime"
     rm -rf "$RUNTIME_DIR"
+
+    run_script "$tempdir/postrm"
 }
 
 show_usage() {
