@@ -59,7 +59,7 @@ update() {
     fi
 
     current_version=$(cat $RUNTIME_DIR/.runtime/version)
-    package_version=$(cat $tempdir/version)
+    package_version=$(cat $tempdir/.runtime/version)
 
     if [ $current_version = $package_version ]; then
         echo "Already at the lastest v$current_version"
@@ -67,13 +67,13 @@ update() {
     fi
 
     echo "Updating to version $package_version"
-    run_script "$tempdir/preinst"
-    run_script "$tempdir/prerm"
+    run_script "$tempdir/.runtime/preinst"
+    run_script "$RUNTIME_DIR/.runtime/prerm"
 
     echo "Removing obsolete files"
     [ -f "$RUNTIME_DIR/.runtime/files" ] && while read f; do
         source="$RUNTIME_DIR/$f"
-        if [ ! -e "$tempdir/files/$f" ]; then
+        if [ ! -e "$tempdir/$f" ]; then
             rm -f "$source"
             echo "$source"
         fi
@@ -81,22 +81,21 @@ update() {
     rm -f "$RUNTIME_DIR/.runtime/files"
 
     echo "Updating files"
-    if [ -d "$tempdir/files" ]; then
-        find "$tempdir/files" \( -type f -o -type l \) | while read f; do
-            relative="${f#$tempdir/files/}"
-            dest="$RUNTIME_DIR/$relative"
+    find "$tempdir/files" \( -type f -o -type l \) ! -path '*/.*' | while read f; do
+        relative="${f#$tempdir/}"
+        dest="$RUNTIME_DIR/$relative"
 
-            mkdir -p "$(dirname "$dest")"
-            if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
-                cp -a "$f" "$dest"
-                echo "$dest"
-            fi
+        mkdir -p "$(dirname "$dest")"
+        if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
+            cp -a "$f" "$dest"
+            echo "$relative"
+        fi
 
-            echo "$relative" >> "$RUNTIME_DIR/.runtime/files"
-        done
-    fi
+        echo "$relative" >> "$RUNTIME_DIR/.runtime/files"
+    done
 
-    run_script "$tempdir/postinst"
+    cp "$tempdir/.runtime/version" "$RUNTIME_DIR/.runtime"
+    run_script "$tempdir/.runtime/postinst"
 }
 
 remove() {
@@ -116,13 +115,13 @@ remove() {
         exit 1
     fi
 
-    run_script "$tempdir/prerm"
+    run_script "$RUNTIME_DIR/.runtime/prerm"
     rollback_mobilus
 
     echo "Removing runtime"
     rm -rf "$RUNTIME_DIR"
 
-    run_script "$tempdir/postrm"
+    run_script "$RUNTIME_DIR/.runtime/postrm"
 }
 
 show_usage() {

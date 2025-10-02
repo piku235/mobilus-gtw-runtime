@@ -81,16 +81,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-run_script "$tempdir/preinst"
+run_script "$tempdir/.runtime/preinst"
 
 echo "Copying files ..."
 mkdir -p "$RUNTIME_DIR/.runtime"
-cp -ar "$tempdir/files/." $RUNTIME_DIR
-(cd "$tempdir/files" && find . \( -type f -o -type l \)) | sed 's|^\./||' > "$RUNTIME_DIR/.runtime/files"
-cp "$tempdir/version" "$RUNTIME_DIR/.runtime"
+cp -ar "$tempdir/*" $RUNTIME_DIR
+(cd "$tempdir" && find . \( -type f -o -type l \) ! -path '*/.*') | sed 's|^\./||' > "$RUNTIME_DIR/.runtime/files"
+cp "$tempdir/.runtime/version" "$RUNTIME_DIR/.runtime"
+[ -x "$tempdir/.runtime/prerm" ] && cp "$tempdir/.runtime/prerm" "$RUNTIME_DIR/.runtime"
 
 install_mobilus_initd
-run_script "$tempdir/postinst"
+run_script "$tempdir/.runtime/postinst"
 
 echo "Done!"
 echo "Now use: $RUNTIME_DIR/scripts/pkg to install any package you want on Cosmo GTW"

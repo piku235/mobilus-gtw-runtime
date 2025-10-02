@@ -23,7 +23,6 @@ run_script() {
 
 install() {
     package_name="$1"
-    package_file="$package_name.jpk"
     package_url=$(package_url $package_name)
 
     if [ -z "$package_name" ]; then
@@ -45,7 +44,7 @@ install() {
     trap cleanup EXIT
 
     echo "Downloading the package"
-    wget -qO "$tempdir/$package_file" --no-check-certificate "$package_url"
+    wget -qO "$tempdir/.jpk" --no-check-certificate "$package_url"
 
     if [ $? -ne 0 ]; then
         echo "Failed to download the package, are you sure it exists?"
@@ -53,7 +52,7 @@ install() {
     fi
 
     echo "Extracting the package"
-    gzip -dc "$tempdir/$package_file" | tar -xf - -C $tempdir .
+    gzip -dc "$tempdir/.jpk" | tar -xf - -C $tempdir .
 
     if [ $? -ne 0 ]; then
         echo "Failed to extract the package"
@@ -61,26 +60,23 @@ install() {
     fi
 
     echo "Installing version $package_version"
-    run_script "$tempdir/preinst"
+    run_script "$tempdir/.pkg/preinst"
 
     mkdir -p "$PACKAGES_DIR/$package_name"
-    cp "$tempdir/version" "$PACKAGES_DIR/$package_name"
+    cp "$tempdir/.pkg/version" "$PACKAGES_DIR/$package_name"
     package_version=$(cat "$PACKAGES_DIR/$package_name/version")
 
-    if [ -d "$tempdir/files" ]; then
-        cp -ar "$tempdir/files/." /
-        (cd "$tempdir/files" && find . \( -type f -o -type l \)) | sed 's|^\./||' > "$PACKAGES_DIR/$package_name/files"
-    fi
+    cp -ar "$tempdir/*" $RUNTIME_DIR
+    (cd "$tempdir" && find . \( -type f -o -type l \) ! -path '*/.*') | sed 's|^\./||' > "$PACKAGES_DIR/$package_name/files"
 
-    [ -x "$tempdir/prerm" ] && cp -a "$tempdir/prerm" "$PACKAGES_DIR/$package_name"
-    [ -x "$tempdir/postrm" ] && cp -a "$tempdir/postrm" "$PACKAGES_DIR/$package_name"
+    [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
+    [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
 
-    run_script "$tempdir/postinst"
+    run_script "$tempdir/.pkg/postinst"
 }
 
 update() {
     package_name="$1"
-    package_file="$package_name.jpk"
     package_url=$(package_url $package_name)
 
     if [ -z "$package_name" ]; then
@@ -102,7 +98,7 @@ update() {
     trap cleanup EXIT
 
     echo "Downloading the package"
-    wget -qO "$tempdir/$package_file" --no-check-certificate "$package_url"
+    wget -qO "$tempdir/.jpk" --no-check-certificate "$package_url"
 
     if [ $? -ne 0 ]; then
         echo "Failed to download the package"
@@ -110,14 +106,14 @@ update() {
     fi
 
     echo "Extracting the package"
-    gzip -dc "$tempdir/$package_file" | tar -xf - -C $tempdir .
+    gzip -dc "$tempdir/.jpk" | tar -xf - -C $tempdir .
 
     if [ $? -ne 0 ]; then
         echo "Failed to extract the package"
         exit 1
     fi
 
-    downloaded_package_version=$(cat "$tempdir/version")
+    downloaded_package_version=$(cat "$tempdir/.pkg/version")
     package_version=$(cat "$PACKAGES_DIR/$package_name/version")
 
     if [ $downloaded_package_version = $package_version ]; then
@@ -126,36 +122,35 @@ update() {
     fi;
 
     echo "Updating to version $package_version"
-    run_script "$tempdir/preinst"
+    run_script "$tempdir/.pkg/preinst"
     run_script "$PACKAGES_DIR/$package_name/prerm"
 
     echo "Removing obsolete files"
     [ -f "$PACKAGES_DIR/$package_name/files" ] && while read f; do
-        if [ ! -e "$tempdir/files/$f" ]; then
-            rm -rf "/$f"
-            echo "/$f"
+        source="$RUNTIME_DIR/$f"
+        if [ ! -e "$tempdir/$f" ]; then
+            rm -f "$source"
+            echo "$f"
         fi
     done < "$PACKAGES_DIR/$package_name/files"
     rm -f "$PACKAGES_DIR/$package_name/files"
 
     echo "Updating files"
-    if [ -d "$tempdir/files" ]; then
-        find "$tempdir/files" \( -type f -o -type l \) | while read f; do
-            relative="${f#$tempdir/files/}"
-            dest="/$relative"
-            mkdir -p "$(dirname "$dest")"
-            if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
-                cp -a "$f" "$dest"
-                echo "$dest"
-            fi
-            echo "$relative" >> "$PACKAGES_DIR/$package_name/files"
-        done
-    fi
+    find "$tempdir/files" \( -type f -o -type l \) ! -path '*/.*' | while read f; do
+        relative="${f#$tempdir/}"
+        dest="$RUNTIME_DIR/$relative"
+        mkdir -p "$(dirname "$dest")"
+        if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
+            cp -a "$f" "$dest"
+            echo "$relative"
+        fi
+        echo "$relative" >> "$PACKAGES_DIR/$package_name/files"
+    done
 
-    [ -x "$tempdir/prerm" ] && cp -a "$tempdir/prerm" "$PACKAGES_DIR/$package_name"
-    [ -x "$tempdir/postrm" ] && cp -a "$tempdir/postrm" "$PACKAGES_DIR/$package_name"
+    [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
+    [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
     
-    run_script "$tempdir/postinst"
+    run_script "$tempdir/.pkg/postinst"
 }
 
 remove() {

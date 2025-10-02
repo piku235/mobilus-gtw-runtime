@@ -61,32 +61,33 @@ jobs:
 
     - name: Make target
       run: |
-        mkdir -p target/files/bin
-        mkdir -p target/files/etc
-        mkdir -p target/files/lib
-        mkdir -p target/files/var
-        cp -ar packaging/scripts target/files
-        [ -x packaging/prerm ] && cp -a packaging/prerm target
-        [ -x packaging/postrm ] && cp -a packaging/postrm target
-        [ -x packaging/preinst ] && cp -a packaging/preinst target
-        [ -x packaging/postinst ] && cp -a packaging/postinst target
-        echo "${{ steps.strings.outputs.runtime-version }}" > target/version
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcares.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcjson.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcrypto.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libssl.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquitto.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquittopp.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libsqlite3.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libz.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/ld-musl-mipsel-sf.so.1 target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libatomic.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libc.so target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libgcc_s.so* target/files/lib
-        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libstdc++.so* target/files/lib
+        mkdir -p target/.runtime
+        mkdir -p target/bin
+        mkdir -p target/etc
+        mkdir -p target/lib
+        mkdir -p target/var
+        cp -ar packaging/scripts target
+        [ -x packaging/prerm ] && cp -a packaging/prerm target/.runtime
+        [ -x packaging/postrm ] && cp -a packaging/postrm target/.runtime
+        [ -x packaging/preinst ] && cp -a packaging/preinst target/.runtime
+        [ -x packaging/postinst ] && cp -a packaging/postinst target/.runtime
+        echo "${{ steps.strings.outputs.runtime-version }}" > target/.runtime/version
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcares.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcjson.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcrypto.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libssl.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquitto.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquittopp.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libsqlite3.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libz.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/ld-musl-mipsel-sf.so.1 target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libatomic.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libc.so target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libgcc_s.so* target/lib
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libstdc++.so* target/lib
 
     - name: Strip libraries
-      run: find target/files/lib -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {} +
+      run: find target/lib -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {} +
 
     - name: Build package
       run: tar -czf runtime.tar.gz -C target .
