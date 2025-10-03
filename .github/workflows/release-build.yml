@@ -59,12 +59,15 @@ jobs:
         make -j$(nproc) package/mosquitto/compile
         make -j$(nproc) package/sqlite3/compile
 
-    - name: Make target
+    - name: Strip libraries
+      run: |
+        find ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {};
+
+    - name: Make target package
       run: |
         mkdir -p target/.runtime
         mkdir -p target/bin
         mkdir -p target/etc
-        mkdir -p target/include
         mkdir -p target/lib
         mkdir -p target/var
         cp -ar packaging/scripts target
@@ -74,7 +77,7 @@ jobs:
         [ -x packaging/postinst ] && cp -a packaging/postinst target/.runtime
         echo "${{ steps.strings.outputs.runtime-version }}" > target/.runtime/version
 
-    - name: Copy libraries to target
+    - name: Copy libraries to target package
       run: |
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcares.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcjson.so* target/lib
@@ -90,23 +93,41 @@ jobs:
         cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libgcc_s.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libstdc++.so* target/lib
 
-    - name: Copy headers to target
-      run: |
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/ares*.h target/include
-        cp -ar ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/cjson target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquitto.h target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquittopp.h target/include
-        cp -ar ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/openssl target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/sqlite3.h target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/zlib.h target/include
-
-    - name: Strip libraries
-      run: find target/lib -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {} +
-
-    - name: Build package
+    - name: Build target package
       run: tar --owner=0 --group=0 -czf runtime.tar.gz -C target .
+
+    - name: Make OpenWRT target
+      run: |
+        mkdir -p openwrt-target/usr/lib
+        mkdir -p openwrt-target/usr/include
+
+    - name: Copy libraries to OpenWRT target
+      run: |
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcares.so* openwrt-target/usr/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcjson.so* openwrt-target/usr/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcrypto.so* openwrt-target/usr/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libssl.so* openwrt-target/usr/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquitto.so* openwrt-target/usr/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquittopp.so* openwrt-target/usr/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libsqlite3.so* openwrt-target/usr/lib
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libz.so* openwrt-target/usr/lib
+
+    - name: Copy headers to OpenWRT target
+      run: |
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/ares*.h openwrt-target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/cjson openwrt-target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquitto.h openwrt-target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquittopp.h openwrt-target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/openssl openwrt-target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/sqlite3.h openwrt-target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/zlib.h openwrt-target/include
+
+    - name: Build OpenWRT target
+      run: tar openwrt-target.tar.gz -C openwrt-target .
 
     - name: Upload
       uses: softprops/action-gh-release@v2
       with:
-        files: runtime.tar.gz
+        files: |
+          runtime.tar.gz
+          openwrt-target.tar.gz
