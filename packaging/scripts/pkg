@@ -76,7 +76,7 @@ install() {
         exit 1
     fi
 
-    package_version=$(cat "$PACKAGES_DIR/$package_name/version")
+    package_version=$(cat "$PACKAGES_DIR/$package_name/.pkg/version")
 
     echo "Installing version $package_version"
     run_script "$tempdir/.pkg/preinst"
@@ -193,7 +193,7 @@ remove() {
         while read f; do
             rm -f "$f"
             if [ "${f#etc/init.d/}" != "$f" ]; then
-                rm -f "/etc/init.d/$(basename "$f")"
+                rm -f "/etc/init.d/$(basename "${f%.template}")"
             fi
         done < "$PACKAGES_DIR/$package_name/files"
     fi
