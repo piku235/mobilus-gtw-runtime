@@ -31,9 +31,7 @@ And to remove the package
 Log in to **Cosmo GTW** via SSH and run:
 
 ```bash
-cd /tmp && wget --no-check-certificate https://raw.githubusercontent.com/piku235/mobilus-gtw-runtime/main/install.sh
-chmod a+x install.sh
-./install.sh
+wget --no-check-certificate -qO- https://raw.githubusercontent.com/piku235/mobilus-gtw-runtime/main/install.sh | sh
 ```
 
 The runtime will be installed at `/opt/jungi`.
