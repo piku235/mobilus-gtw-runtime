@@ -55,16 +55,6 @@ if [ -d $RUNTIME_DIR ]; then
   exit 1
 fi
 
-cd /tmp
-
-echo "Downloading the runtime"
-wget -qO "$PACKAGE_NAME" --no-check-certificate "$PACKAGE_URL"
-
-if [ $? -ne 0 ]; then
-    echo "Failed to download the runtime"
-    exit 1
-fi
-
 tempdir=$(mktemp -d)
 
 cleanup() {
@@ -73,8 +63,16 @@ cleanup() {
 
 trap cleanup EXIT
 
+echo "Downloading the runtime"
+wget -qO "$tempdir/.pkg" --no-check-certificate "$PACKAGE_URL"
+
+if [ $? -ne 0 ]; then
+    echo "Failed to download the runtime"
+    exit 1
+fi
+
 echo "Extracting the runtime"
-gzip -dc "$PACKAGE_NAME" | tar -xf - -C $tempdir .
+gzip -dc "$tempdir/.pkg" | tar -xf - -C $tempdir .
 
 if [ $? -ne 0 ]; then
     echo "Failed to extract the runtime"
