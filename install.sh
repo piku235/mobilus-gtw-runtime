@@ -85,7 +85,7 @@ run_script "$tempdir/.runtime/preinst"
 
 echo "Copying files ..."
 mkdir -p "$RUNTIME_DIR/.runtime"
-cp -ar "$tempdir/*" $RUNTIME_DIR
+cp -ar "$tempdir/"* "$RUNTIME_DIR"
 (cd "$tempdir" && find . \( -type f -o -type l \) ! -path '*/.*') | sed 's|^\./||' > "$RUNTIME_DIR/.runtime/files"
 cp "$tempdir/.runtime/version" "$RUNTIME_DIR/.runtime"
 [ -x "$tempdir/.runtime/prerm" ] && cp "$tempdir/.runtime/prerm" "$RUNTIME_DIR/.runtime"

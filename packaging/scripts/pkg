@@ -83,7 +83,7 @@ install() {
     cp "$tempdir/.pkg/version" "$PACKAGES_DIR/$package_name"
     package_version=$(cat "$PACKAGES_DIR/$package_name/version")
 
-    cp -ar "$tempdir/*" $RUNTIME_DIR
+    cp -ar "$tempdir/"* $RUNTIME_DIR
     (cd "$tempdir" && find . \( -type f -o -type l \) ! -path '*/.*') | sed 's|^\./||' > "$PACKAGES_DIR/$package_name/files"
 
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
@@ -154,7 +154,7 @@ update() {
     rm -f "$PACKAGES_DIR/$package_name/files"
 
     echo "Updating files"
-    find "$tempdir/files" \( -type f -o -type l \) ! -path '*/.*' | while read f; do
+    find "$tempdir" \( -type f -o -type l \) ! -path '*/.*' | while read f; do
         relative="${f#$tempdir/}"
         dest="$RUNTIME_DIR/$relative"
         mkdir -p "$(dirname "$dest")"
