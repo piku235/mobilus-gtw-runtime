@@ -64,6 +64,7 @@ jobs:
         mkdir -p target/.runtime
         mkdir -p target/bin
         mkdir -p target/etc
+        mkdir -p target/include
         mkdir -p target/lib
         mkdir -p target/var
         cp -ar packaging/scripts target
@@ -72,6 +73,9 @@ jobs:
         [ -x packaging/preinst ] && cp -a packaging/preinst target/.runtime
         [ -x packaging/postinst ] && cp -a packaging/postinst target/.runtime
         echo "${{ steps.strings.outputs.runtime-version }}" > target/.runtime/version
+
+    - name: Copy libraries to target
+      run: |
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcares.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcjson.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcrypto.so* target/lib
@@ -86,11 +90,21 @@ jobs:
         cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libgcc_s.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/libstdc++.so* target/lib
 
+    - name: Copy headers to target
+      run: |
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/ares*.h target/include
+        cp -ar ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/cjson target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquitto.h target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquittopp.h target/include
+        cp -ar ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/openssl target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/sqlite3.h target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/zlib.h target/include
+
     - name: Strip libraries
       run: find target/lib -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {} +
 
     - name: Build package
-      run: tar -czf runtime.tar.gz -C target .
+      run: tar --owner=0 --group=0 -czf runtime.tar.gz -C target .
 
     - name: Upload
       uses: softprops/action-gh-release@v2
