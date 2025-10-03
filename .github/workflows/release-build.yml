@@ -113,13 +113,13 @@ jobs:
 
     - name: Copy headers to OpenWRT target
       run: |
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/ares*.h openwrt-target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/cjson openwrt-target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquitto.h openwrt-target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquittopp.h openwrt-target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/openssl openwrt-target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/sqlite3.h openwrt-target/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/zlib.h openwrt-target/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/ares*.h openwrt-target/usr/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/cjson openwrt-target/usr/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquitto.h openwrt-target/usr/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquittopp.h openwrt-target/usr/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/openssl openwrt-target/usr/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/sqlite3.h openwrt-target/usr/include
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/zlib.h openwrt-target/usr/include
 
     - name: Build OpenWRT target
       run: tar openwrt-target.tar.gz openwrt-target
