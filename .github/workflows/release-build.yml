@@ -60,7 +60,7 @@ jobs:
         make -j$(nproc) package/sqlite3/compile
 
     - name: Strip libraries
-      run: find ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' ! -name 'libgcc_s.so' -exec mipsel-openwrt-linux-strip --strip-unneeded {} +
+      run: find ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib -type f -regex '.*/lib.*\.so\(\.[0-9]+\)*' -exec mipsel-openwrt-linux-strip --strip-unneeded {} \; 2>/dev/null
 
     - name: Make target package
       run: |
