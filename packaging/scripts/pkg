@@ -21,6 +21,23 @@ run_script() {
     fi
 }
 
+setup_services() {
+    package_dir=$1
+
+    if [ -d "$package_dir/etc/init.d" ]; then
+        find "$package_dir/etc/init.d" -name '*.template' -maxdepth 1 -type f | while read f; do
+            service="${f#$package_dir/etc/init.d/}"
+            service="${service%.template}"
+            sed "s|\${RUNTIME_DIR}|$RUNTIME_DIR|g" "$f" > "$package_dir/etc/init.d/$service"
+            chmod +x "$package_dir/etc/init.d/$service"
+
+            if [ ! -e "/etc/init.d/$service" ] || ! cmp "$package_dir/etc/init.d/$service" "/etc/init.d/$service"; then
+                mv "$package_dir/etc/init.d/$service" "/etc/init.d/$service"
+            fi
+        done;
+    fi
+}
+
 install() {
     package_name="$1"
     package_url=$(package_url $package_name)
@@ -72,6 +89,7 @@ install() {
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
     [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
 
+    setup_services "$tempdir"
     run_script "$tempdir/.pkg/postinst"
 }
 
@@ -150,6 +168,7 @@ update() {
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
     [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
     
+    setup_services "$tempdir"
     run_script "$tempdir/.pkg/postinst"
 }
 
