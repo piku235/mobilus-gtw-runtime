@@ -76,14 +76,15 @@ install() {
         exit 1
     fi
 
+    package_version=$(cat "$PACKAGES_DIR/$package_name/version")
+
     echo "Installing version $package_version"
     run_script "$tempdir/.pkg/preinst"
 
     mkdir -p "$PACKAGES_DIR/$package_name"
-    cp "$tempdir/.pkg/version" "$PACKAGES_DIR/$package_name"
-    package_version=$(cat "$PACKAGES_DIR/$package_name/version")
+    cp -a "$tempdir/.pkg/version" "$PACKAGES_DIR/$package_name"
 
-    cp -ar "$tempdir/"* $RUNTIME_DIR
+    cp -a "$tempdir/"* $RUNTIME_DIR
     (cd "$tempdir" && find . \( -type f -o -type l \) ! -path '*/.*') | sed 's|^\./||' > "$PACKAGES_DIR/$package_name/files"
 
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"

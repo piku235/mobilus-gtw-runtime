@@ -120,6 +120,7 @@ remove() {
 
     echo "Removing runtime"
     rm -rf "$RUNTIME_DIR"
+    rmdir "$(dirname $RUNTIME_DIR)" 2>/dev/null || true
 
     run_script "$RUNTIME_DIR/.runtime/postrm"
 }
