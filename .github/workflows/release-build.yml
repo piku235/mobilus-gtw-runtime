@@ -69,7 +69,8 @@ jobs:
         mkdir -p target/etc
         mkdir -p target/lib
         mkdir -p target/var
-        cp -ar packaging/scripts target
+        cp -ar packaging/pkg target/bin
+        cp -ar packaging/runtime target/bin
         [ -x packaging/prerm ] && cp -a packaging/prerm target/.runtime
         [ -x packaging/postrm ] && cp -a packaging/postrm target/.runtime
         [ -x packaging/preinst ] && cp -a packaging/preinst target/.runtime
