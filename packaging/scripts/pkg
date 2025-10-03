@@ -76,7 +76,7 @@ install() {
         exit 1
     fi
 
-    package_version=$(cat "$PACKAGES_DIR/$package_name/.pkg/version")
+    package_version=$(cat "$tempdir/.pkg/version")
 
     echo "Installing version $package_version"
     run_script "$tempdir/.pkg/preinst"
