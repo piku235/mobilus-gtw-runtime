@@ -189,7 +189,11 @@ remove() {
     run_script "$PACKAGES_DIR/$package_name/prerm"
 
     if [ -f "$PACKAGES_DIR/$package_name/files" ]; then
-        while read f; do rm -f "$f"
+        while read f; do
+            rm -f "$f"
+            if [ "${f#etc/init.d/}" != "$f" ]; then
+                rm -f "/etc/init.d/$(basename "$f")"
+            fi
         done < "$PACKAGES_DIR/$package_name/files"
     fi
 
