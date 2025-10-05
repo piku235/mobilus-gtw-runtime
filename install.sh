@@ -1,8 +1,7 @@
 #!/bin/sh
 
 REPO=piku235/mobilus-gtw-runtime
-PACKAGE_NAME="runtime.tar.gz"
-PACKAGE_URL="https://github.com/$REPO/releases/latest/download/$PACKAGE_NAME"
+PACKAGE_URL="https://github.com/$REPO/releases/latest/download/runtime.tar.gz"
 RUNTIME_DIR=/opt/jungi
 
 run_script() {

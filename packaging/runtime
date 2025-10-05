@@ -1,8 +1,7 @@
 #!/bin/sh
 
 REPO=piku235/mobilus-gtw-runtime
-PACKAGE_NAME="runtime.tar.gz"
-PACKAGE_URL="https://github.com/$REPO/releases/latest/download/$PACKAGE_NAME"
+PACKAGE_URL="https://github.com/$REPO/releases/latest/download/runtime.tar.gz"
 RUNTIME_DIR=/opt/jungi
 PACKAGES_DIR=$RUNTIME_DIR/packages
 
@@ -43,7 +42,7 @@ update() {
 
     trap cleanup EXIT
 
-    wget -qO "$tempdir/$PACKAGE_NAME" --no-check-certificate "$PACKAGE_URL"
+    wget -qO "$tempdir/.pkg" --no-check-certificate "$PACKAGE_URL"
 
     if [ $? -ne 0 ]; then
         echo "Failed to download the runtime"
@@ -51,7 +50,7 @@ update() {
     fi
 
     echo "Extracting the runtime"
-    gzip -dc "$tempdir/$PACKAGE_NAME" | tar -xf - -C $tempdir .
+    gzip -dc "$tempdir/.pkg" | tar -xf - -C $tempdir .
 
     if [ $? -ne 0 ]; then
         echo "Failed to extract the runtime"
