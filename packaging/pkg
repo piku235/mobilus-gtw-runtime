@@ -35,6 +35,15 @@ setup_service() {
     chmod +x "/etc/init.d/$service"
 }
 
+remove_service() {
+    initd_template_file=$1
+
+    if [ "${initd_template_file%.template}" != "$initd_template_file" ]; then
+        service="$(basename "$initd_template_file" .template)"
+        rm -f "/etc/init.d/$service"
+    fi
+}
+
 install_files() {
     package_dir=$1
 
@@ -162,6 +171,7 @@ update() {
         if [ ! -e "$tempdir/$f" ]; then
             rm -f "$source"
             echo "$f"
+            [ "${f#etc/init.d/}" != "$f" ] && remove_service "$source"
         fi
     done < "$PACKAGES_DIR/$package_name/files"
     rm -f "$PACKAGES_DIR/$package_name/files"
@@ -193,10 +203,9 @@ remove() {
 
     if [ -f "$PACKAGES_DIR/$package_name/files" ]; then
         while read f; do
-            rm -f "$RUNTIME_DIR/$f"
-            if [ "${f#etc/init.d/}" != "$f" ]; then
-                rm -f "/etc/init.d/$(basename "${f%.template}")"
-            fi
+            source="$RUNTIME_DIR/$f"
+            rm -f "$source"
+            [ "${f#etc/init.d/}" != "$f" ] && remove_service "$source"
         done < "$PACKAGES_DIR/$package_name/files"
     fi
 
