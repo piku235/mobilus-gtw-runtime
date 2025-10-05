@@ -96,15 +96,18 @@ jobs:
     - name: Build target package
       run: tar --owner=0 --group=0 -czf runtime.tar.gz -C target .
 
-    - name: Build OpenWRT target
+    - name: Build target sysroot
       run: |
-        mkdir openwrt-target
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr openwrt-target
-        tar -czf openwrt-target.tar.gz openwrt-target
+        mkdir -p target-sysroot/usr
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib target-sysroot
+        cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/include target-sysroot
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib target-sysroot/usr
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include target-sysroot/usr
+        tar -czf target-sysroot.tar.gz target-sysroot
 
     - name: Upload
       uses: softprops/action-gh-release@v2
       with:
         files: |
           runtime.tar.gz
-          openwrt-target.tar.gz
+          target-sysroot.tar.gz
