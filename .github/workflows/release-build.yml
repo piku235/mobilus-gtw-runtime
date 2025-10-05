@@ -97,7 +97,10 @@ jobs:
       run: tar --owner=0 --group=0 -czf runtime.tar.gz -C target .
 
     - name: Build OpenWRT target
-      run: tar -czf openwrt-target.tar.gz -C ${{ steps.strings.outputs.openwrt-target-dir }} usr
+      run: |
+        mkdir openwrt-target
+        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr openwrt-target
+        tar -czf openwrt-target.tar.gz -C openwrt-target .
 
     - name: Upload
       uses: softprops/action-gh-release@v2
