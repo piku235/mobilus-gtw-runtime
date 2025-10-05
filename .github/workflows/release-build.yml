@@ -100,7 +100,7 @@ jobs:
       run: |
         mkdir openwrt-target
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr openwrt-target
-        tar -czf openwrt-target.tar.gz -C openwrt-target .
+        tar -czf openwrt-target.tar.gz openwrt-target
 
     - name: Upload
       uses: softprops/action-gh-release@v2
