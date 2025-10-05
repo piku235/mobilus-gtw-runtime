@@ -96,34 +96,8 @@ jobs:
     - name: Build target package
       run: tar --owner=0 --group=0 -czf runtime.tar.gz -C target .
 
-    - name: Make OpenWRT target
-      run: |
-        mkdir -p openwrt-target/usr/lib
-        mkdir -p openwrt-target/usr/include
-
-    - name: Copy libraries to OpenWRT target
-      run: |
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcares.so* openwrt-target/usr/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcjson.so* openwrt-target/usr/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcrypto.so* openwrt-target/usr/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libssl.so* openwrt-target/usr/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquitto.so* openwrt-target/usr/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquittopp.so* openwrt-target/usr/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libsqlite3.so* openwrt-target/usr/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libz.so* openwrt-target/usr/lib
-
-    - name: Copy headers to OpenWRT target
-      run: |
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/ares*.h openwrt-target/usr/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/cjson openwrt-target/usr/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquitto.h openwrt-target/usr/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/mosquittopp.h openwrt-target/usr/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/openssl openwrt-target/usr/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/sqlite3.h openwrt-target/usr/include
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/include/zlib.h openwrt-target/usr/include
-
     - name: Build OpenWRT target
-      run: tar -czf openwrt-target.tar.gz openwrt-target
+      run: tar -czf openwrt-target.tar.gz -C ${{ steps.strings.outputs.openwrt-target-dir }} usr
 
     - name: Upload
       uses: softprops/action-gh-release@v2
