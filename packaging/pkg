@@ -21,21 +21,34 @@ run_script() {
     fi
 }
 
-setup_services() {
+setup_service() {
+    initd_template_file=$1
+
+    if [ "${initd_template_file%.template}" = "$initd_template_file" ]; then
+        # not an initd service template
+        return 1
+    fi
+
+    service="$(basename "$initd_template_file" .template)"
+
+    sed "s|\${RUNTIME_DIR}|$RUNTIME_DIR|g" "$initd_template_file" > "/etc/init.d/$service"
+    chmod +x "/etc/init.d/$service"
+}
+
+install_files() {
     package_dir=$1
 
-    if [ -d "$package_dir/etc/init.d" ]; then
-        find "$package_dir/etc/init.d" -name '*.template' -maxdepth 1 -type f | while read f; do
-            service="${f#$package_dir/etc/init.d/}"
-            service="${service%.template}"
-            sed "s|\${RUNTIME_DIR}|$RUNTIME_DIR|g" "$f" > "$package_dir/etc/init.d/$service"
-            chmod +x "$package_dir/etc/init.d/$service"
-
-            if [ ! -e "/etc/init.d/$service" ] || ! cmp "$package_dir/etc/init.d/$service" "/etc/init.d/$service"; then
-                mv "$package_dir/etc/init.d/$service" "/etc/init.d/$service"
-            fi
-        done;
-    fi
+    find "$package_dir" \( -type f -o -type l \) ! -path '*/.*' | while read f; do
+        relative="${f#$package_dir/}"
+        dest="$RUNTIME_DIR/$relative"
+        mkdir -p "$(dirname "$dest")"
+        if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
+            cp -a "$f" "$dest"
+            echo "$relative"
+            [ "${relative#etc/init.d/}" != "$relative" ] && setup_service "$dest"
+        fi
+        echo "$relative" >> "$PACKAGES_DIR/$package_name/files"
+    done
 }
 
 install() {
@@ -84,13 +97,12 @@ install() {
     mkdir -p "$PACKAGES_DIR/$package_name"
     cp -a "$tempdir/.pkg/version" "$PACKAGES_DIR/$package_name"
 
-    cp -a "$tempdir/"* $RUNTIME_DIR
-    (cd "$tempdir" && find . \( -type f -o -type l \) ! -path '*/.*') | sed 's|^\./||' > "$PACKAGES_DIR/$package_name/files"
+    echo "Copying files"
+    install_files "$tempdir"
 
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
     [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
 
-    setup_services "$tempdir"
     run_script "$tempdir/.pkg/postinst"
 }
 
@@ -155,21 +167,11 @@ update() {
     rm -f "$PACKAGES_DIR/$package_name/files"
 
     echo "Updating files"
-    find "$tempdir" \( -type f -o -type l \) ! -path '*/.*' | while read f; do
-        relative="${f#$tempdir/}"
-        dest="$RUNTIME_DIR/$relative"
-        mkdir -p "$(dirname "$dest")"
-        if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
-            cp -a "$f" "$dest"
-            echo "$relative"
-        fi
-        echo "$relative" >> "$PACKAGES_DIR/$package_name/files"
-    done
+    install_files "$tempdir"
 
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
     [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
     
-    setup_services "$tempdir"
     run_script "$tempdir/.pkg/postinst"
 }
 
