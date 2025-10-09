@@ -182,6 +182,7 @@ update() {
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
     [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
     
+    cp -a "$tempdir/.pkg/version" "$PACKAGES_DIR/$package_name"
     run_script "$tempdir/.pkg/postinst"
 }
 
