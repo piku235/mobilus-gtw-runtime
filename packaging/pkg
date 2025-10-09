@@ -154,14 +154,14 @@ update() {
     fi
 
     downloaded_package_version=$(cat "$tempdir/.pkg/version")
-    package_version=$(cat "$PACKAGES_DIR/$package_name/version")
+    current_package_version=$(cat "$PACKAGES_DIR/$package_name/version")
 
-    if [ $downloaded_package_version = $package_version ]; then
-        echo "Package is already at the lastest v$package_version"
+    if [ $downloaded_package_version = $current_package_version ]; then
+        echo "Package is already at the lastest v$current_package_version"
         exit 1
     fi;
 
-    echo "Updating to version $package_version"
+    echo "Updating to version $downloaded_package_version"
     run_script "$tempdir/.pkg/preinst"
     run_script "$PACKAGES_DIR/$package_name/prerm"
 
