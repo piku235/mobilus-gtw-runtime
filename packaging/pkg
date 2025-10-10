@@ -60,8 +60,8 @@ install_files() {
         dest="$RUNTIME_DIR/$relative"
         mkdir -p "$(dirname "$dest")"
         if [ ! -e "$dest" ] || { ! cmp -s "$f" "$dest" && ! is_conffile "$package_dir" "$relative"; }; then
+            echo "Copying: $relative"
             cp -a "$f" "$dest"
-            echo "$relative"
             [ "${relative#etc/init.d/}" != "$relative" ] && setup_service "$dest"
         fi
         echo "$relative" >> "$PACKAGES_DIR/$package_name/files"
@@ -114,7 +114,6 @@ install() {
     mkdir -p "$PACKAGES_DIR/$package_name"
     cp -a "$tempdir/.pkg/version" "$PACKAGES_DIR/$package_name"
 
-    echo "Copying files"
     install_files "$tempdir"
 
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
@@ -173,24 +172,22 @@ update() {
     run_script "$tempdir/.pkg/preinst"
     run_script "$PACKAGES_DIR/$package_name/prerm"
 
-    echo "Removing obsolete files"
     [ -f "$PACKAGES_DIR/$package_name/files" ] && while read f; do
         source="$RUNTIME_DIR/$f"
         if [ ! -e "$tempdir/$f" ]; then
+            echo "Removing: $f"
             rm -f "$source"
-            echo "$f"
             [ "${f#etc/init.d/}" != "$f" ] && remove_service "$source"
         fi
     done < "$PACKAGES_DIR/$package_name/files"
     rm -f "$PACKAGES_DIR/$package_name/files"
 
-    echo "Updating files"
     install_files "$tempdir"
 
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
     [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
-    
     cp -a "$tempdir/.pkg/version" "$PACKAGES_DIR/$package_name"
+
     run_script "$tempdir/.pkg/postinst"
 }
 
