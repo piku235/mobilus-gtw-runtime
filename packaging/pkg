@@ -204,6 +204,12 @@ remove() {
         exit 1
     fi
 
+    read -p "Are you sure you want to continue? (y/n) " answer
+    if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+        echo "Aborted"
+        exit 1
+    fi
+
     echo "Removing package"
     run_script "$PACKAGES_DIR/$package_name/prerm"
 
