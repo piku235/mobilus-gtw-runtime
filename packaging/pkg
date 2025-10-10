@@ -53,14 +53,17 @@ is_conffile() {
 }
 
 install_files() {
-    package_dir=$1
+    mode=$1
+    package_dir=$2
 
     find "$package_dir" \( -type f -o -type l \) ! -path '*/.*' | while read f; do
         relative="${f#$package_dir/}"
         dest="$RUNTIME_DIR/$relative"
         mkdir -p "$(dirname "$dest")"
         if [ ! -e "$dest" ] || { ! cmp -s "$f" "$dest" && ! is_conffile "$package_dir" "$relative"; }; then
-            echo "Copying: $relative"
+            if [ "$mode" = "update" ]; then
+                echo "Updating: $relative"
+            fi
             cp -a "$f" "$dest"
             [ "${relative#etc/init.d/}" != "$relative" ] && setup_service "$dest"
         fi
@@ -114,7 +117,8 @@ install() {
     mkdir -p "$PACKAGES_DIR/$package_name"
     cp -a "$tempdir/.pkg/version" "$PACKAGES_DIR/$package_name"
 
-    install_files "$tempdir"
+    echo "Copying files ..."
+    install_files "install" "$tempdir"
 
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
     [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
@@ -182,7 +186,7 @@ update() {
     done < "$PACKAGES_DIR/$package_name/files"
     rm -f "$PACKAGES_DIR/$package_name/files"
 
-    install_files "$tempdir"
+    install_files "update" "$tempdir"
 
     [ -x "$tempdir/.pkg/prerm" ] && cp -a "$tempdir/.pkg/prerm" "$PACKAGES_DIR/$package_name"
     [ -x "$tempdir/.pkg/postrm" ] && cp -a "$tempdir/.pkg/postrm" "$PACKAGES_DIR/$package_name"
