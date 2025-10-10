@@ -69,31 +69,32 @@ update() {
     run_script "$tempdir/.runtime/preinst"
     run_script "$RUNTIME_DIR/.runtime/prerm"
 
-    echo "Removing obsolete files"
     [ -f "$RUNTIME_DIR/.runtime/files" ] && while read f; do
         source="$RUNTIME_DIR/$f"
         if [ ! -e "$tempdir/$f" ]; then
+            echo "Removing: $source"
             rm -f "$source"
-            echo "$source"
         fi
     done < "$RUNTIME_DIR/.runtime/files"
     rm -f "$RUNTIME_DIR/.runtime/files"
 
-    echo "Updating files"
     find "$tempdir" \( -type f -o -type l \) ! -path '*/.*' | while read f; do
         relative="${f#$tempdir/}"
         dest="$RUNTIME_DIR/$relative"
 
         mkdir -p "$(dirname "$dest")"
         if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
+            echo "Updating: $relative"
             cp -a "$f" "$dest"
-            echo "$relative"
         fi
 
         echo "$relative" >> "$RUNTIME_DIR/.runtime/files"
     done
 
+    [ -x "$tempdir/.runtime/prerm" ] && cp "$tempdir/.runtime/prerm" "$RUNTIME_DIR/.runtime"
+    [ -x "$tempdir/.runtime/postrm" ] && cp "$tempdir/.runtime/postrm" "$RUNTIME_DIR/.runtime"
     cp "$tempdir/.runtime/version" "$RUNTIME_DIR/.runtime"
+
     run_script "$tempdir/.runtime/postinst"
 }
 
