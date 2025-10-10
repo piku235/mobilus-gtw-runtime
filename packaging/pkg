@@ -44,6 +44,14 @@ remove_service() {
     fi
 }
 
+is_conffile() {
+    package_dir=$1
+    file=$2
+    conffiles="$package_dir/.pkg/conffiles"
+
+    [ -f "$conffiles" ] && grep -Fqx "$file" "$conffiles"
+}
+
 install_files() {
     package_dir=$1
 
@@ -51,7 +59,7 @@ install_files() {
         relative="${f#$package_dir/}"
         dest="$RUNTIME_DIR/$relative"
         mkdir -p "$(dirname "$dest")"
-        if [ ! -e "$dest" ] || ! cmp -s "$f" "$dest"; then
+        if [ ! -e "$dest" ] || { ! cmp -s "$f" "$dest" && ! is_conffile "$package_dir" "$relative"; }; then
             cp -a "$f" "$dest"
             echo "$relative"
             [ "${relative#etc/init.d/}" != "$relative" ] && setup_service "$dest"
