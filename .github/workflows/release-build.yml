@@ -56,7 +56,6 @@ jobs:
       working-directory: openwrt-sdk
       run: |
         make -j$(nproc) package/openssl/compile
-        make -j$(nproc) package/mosquitto/compile
         make -j$(nproc) package/sqlite3/compile
 
     - name: Strip libraries
@@ -79,12 +78,8 @@ jobs:
 
     - name: Copy libraries to target package
       run: |
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcares.so* target/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcjson.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libcrypto.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libssl.so* target/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquitto.so* target/lib
-        cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libmosquittopp.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libsqlite3.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-target-dir }}/usr/lib/libz.so* target/lib
         cp -a ${{ steps.strings.outputs.openwrt-toolchain-dir }}/lib/ld-musl-mipsel-sf.so.1 target/lib
